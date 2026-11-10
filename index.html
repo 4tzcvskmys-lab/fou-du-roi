@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="sombre">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fou du Roi — analyseur de parties d’échecs</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%235fb3a1'/%3E%3Cpath d='M50 19C35 31 33 47 39 59H61C67 47 65 31 50 19Z M38 79L42 66H58L62 79Z' fill='%23101318'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/style.css">
+  <meta name="theme-color" content="#101318" data-pwa>
+  <link rel="manifest" href="manifest.webmanifest" data-pwa>
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" data-pwa>
+  <meta name="apple-mobile-web-app-capable" content="yes" data-pwa>
+  <meta name="mobile-web-app-capable" content="yes" data-pwa>
+  <meta name="apple-mobile-web-app-title" content="Fou du Roi" data-pwa>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" data-pwa>
+</head>
+<body>
+  <div class="install-banner hidden" id="install-banner" role="note">
+    <span>📲 <strong>Installer Fou du Roi :</strong> touchez
+      <svg class="ios-share" viewBox="0 0 24 24" aria-label="Partager"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M5 11v9h14v-9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <em>Partager</em> en bas de Safari, puis <em>« Sur l’écran d’accueil »</em>.</span>
+    <button class="btn small" id="install-banner-close" aria-label="Fermer">✕</button>
+  </div>
+  <header class="topbar">
+    <div class="brand">
+      <svg class="brand-logo" viewBox="0 0 100 100" aria-hidden="true">
+        <rect width="100" height="100" rx="22"></rect>
+        <path d="M50 17C35 29 33 45 39 57H61C67 45 65 29 50 17Z M36 61H64V67H36Z M38 80L42 69H58L62 80Z M26 82H74V88H26Z"></path>
+      </svg>
+      <div>
+        <div class="brand-name">Fou du Roi</div>
+        <div class="brand-sub">Analyseur de parties d’échecs</div>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="analyse" role="tab">Analyse</button>
+      <button class="tab" data-tab="importer" role="tab">Importer</button>
+      <button class="tab" data-tab="bibliotheque" role="tab">Bibliothèque <span class="tab-count" id="lib-count">0</span></button>
+      <button class="tab" data-tab="stats" role="tab">Mes statistiques</button>
+      <button class="tab" data-tab="compte" role="tab">Mon compte</button>
+    </nav>
+    <div class="topbar-right">
+      <button class="btn small hidden" id="btn-sync-top" title="Importer mes parties récentes">⟳ Synchroniser</button>
+      <span class="engine-status" id="engine-status" title="État du moteur">
+        <span class="dot"></span><span class="label">Moteur : chargement…</span>
+      </span>
+      <button class="icon-btn" id="theme-toggle" title="Changer de thème (clair / sombre)" aria-label="Changer de thème"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg></button>
+    </div>
+  </header>
+
+  <main>
+    <!-- ======================= ANALYSE ======================= -->
+    <section class="panel active" id="tab-analyse">
+      <div class="empty-state" id="empty-state">
+        <h1>Analysez vos parties avec Stockfish</h1>
+        <p>Importez une partie (PGN, fichier, Lichess ou Chess.com) pour obtenir la courbe d’évaluation,
+          la classification de chaque coup et la précision des deux joueurs — directement dans votre navigateur.</p>
+        <div class="row-gap">
+          <button class="btn primary" data-action="load-sample">Charger un exemple</button>
+          <button class="btn" data-goto-tab="importer">Importer une partie</button>
+        </div>
+      </div>
+
+      <div class="analysis-layout hidden" id="analysis-layout">
+        <div class="board-col">
+          <div class="player-bar" id="player-top"></div>
+          <div class="board-area">
+            <div class="eval-bar" id="eval-bar" title="Barre d’évaluation">
+              <div class="eval-fill" id="eval-fill"></div>
+              <span class="eval-label" id="eval-label">0.00</span>
+            </div>
+            <div class="board" id="board"></div>
+          </div>
+          <div class="player-bar" id="player-bottom"></div>
+          <div class="controls">
+            <button class="btn icon" id="btn-start" title="Début (↑ ou Origine)">⏮</button>
+            <button class="btn icon" id="btn-prev" title="Coup précédent (←)">◀</button>
+            <span class="ply-indicator" id="ply-indicator">Position initiale</span>
+            <button class="btn icon" id="btn-next" title="Coup suivant (→)">▶</button>
+            <button class="btn icon" id="btn-end" title="Fin (↓ ou Fin)">⏭</button>
+            <button class="btn icon" id="btn-flip" title="Retourner l’échiquier (F)">⇅</button>
+          </div>
+          <div class="card graph-card">
+            <div class="card-title">Courbe d’évaluation <span class="muted small">(cliquez pour aller au coup)</span></div>
+            <canvas id="eval-graph" class="eval-graph"></canvas>
+          </div>
+        </div>
+
+        <div class="side-col">
+          <div class="card game-info" id="game-info"></div>
+
+          <div class="card engine-card">
+            <div class="engine-head">
+              <label class="field-inline">Profondeur
+                <select id="depth-select">
+                  <option value="8">8 (rapide)</option>
+                  <option value="10">10</option>
+                  <option value="12">12</option>
+                  <option value="14" selected>14 (recommandé)</option>
+                  <option value="16">16</option>
+                  <option value="18">18</option>
+                  <option value="20">20 (lent)</option>
+                </select>
+              </label>
+              <button class="btn primary" id="btn-analyze">Analyser la partie</button>
+            </div>
+            <div class="progress hidden" id="progress">
+              <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+              <div class="progress-text" id="progress-text">0 %</div>
+            </div>
+            <div class="engine-line" id="engine-line">
+              <span class="engine-eval" id="engine-eval">–</span>
+              <span class="engine-pv" id="engine-pv">Aucune analyse pour cette position.</span>
+            </div>
+          </div>
+
+          <div class="card moves-card">
+            <div class="card-title">Coups
+              <label class="check small"><input type="checkbox" id="fr-notation" checked> Notation française</label>
+            </div>
+            <div class="move-list" id="move-list"></div>
+            <div class="move-comment" id="move-comment"></div>
+          </div>
+
+          <div class="card summary-card" id="summary-card">
+            <div class="card-title">Bilan de la partie</div>
+            <div id="summary" class="summary"><p class="muted">Lancez l’analyse pour obtenir la précision et la classification des coups.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================= IMPORTER ======================= -->
+    <section class="panel" id="tab-importer">
+      <div class="import-grid">
+        <div class="card">
+          <div class="card-title">Coller un PGN</div>
+          <textarea id="pgn-input" rows="10" spellcheck="false" placeholder="[Event &quot;…&quot;]&#10;[White &quot;…&quot;]&#10;&#10;1. e4 e5 2. Cf3 …  (une ou plusieurs parties)"></textarea>
+          <div class="row-gap">
+            <button class="btn primary" id="btn-import-paste">Importer</button>
+            <button class="btn" data-action="load-sample">Charger un exemple</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Fichier PGN</div>
+          <label class="dropzone" id="dropzone">
+            <input type="file" id="file-input" accept=".pgn,.txt,application/x-chess-pgn,text/plain" multiple>
+            <span class="drop-icon">⇪</span>
+            <span>Glissez un fichier <strong>.pgn</strong> ici<br>ou cliquez pour le choisir</span>
+            <span class="muted small">Les fichiers contenant plusieurs parties sont acceptés.</span>
+          </label>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Parties récentes en ligne</div>
+          <label class="field">Nom d’utilisateur
+            <input type="text" id="online-user" placeholder="ex. : MonPseudo" autocomplete="off">
+          </label>
+          <div class="row-gap">
+            <button class="btn" id="btn-lichess">Depuis Lichess</button>
+            <button class="btn" id="btn-chesscom">Depuis Chess.com</button>
+          </div>
+          <p class="muted small">Récupère jusqu’à 20 parties récentes via les API publiques (connexion Internet requise).</p>
+        </div>
+      </div>
+
+      <div class="status" id="import-status" role="status" aria-live="polite"></div>
+
+      <div class="card hidden" id="import-results-card">
+        <div class="card-title">Parties trouvées — choisissez celle à analyser</div>
+        <div class="game-list" id="import-results"></div>
+      </div>
+    </section>
+
+    <!-- ======================= BIBLIOTHÈQUE ======================= -->
+    <section class="panel" id="tab-bibliotheque">
+      <div class="card">
+        <div class="lib-head">
+          <div class="card-title">Parties enregistrées</div>
+          <div class="row-gap">
+            <input type="search" id="lib-filter" placeholder="Filtrer (joueur, ouverture…)">
+            <button class="btn danger" id="btn-clear-all">Tout effacer</button>
+          </div>
+        </div>
+        <div class="game-list" id="library"></div>
+      </div>
+    </section>
+
+    <!-- ======================= STATISTIQUES ======================= -->
+    <section class="panel" id="tab-stats">
+      <div class="card">
+        <div class="card-title">Mes statistiques</div>
+        <div class="row-gap">
+          <label class="field-inline">Nom d’utilisateur
+            <input type="text" id="stats-user" list="players-list" placeholder="Votre pseudo" autocomplete="off">
+          </label>
+          <datalist id="players-list"></datalist>
+          <button class="btn primary" id="btn-stats">Afficher</button>
+        </div>
+        <p class="muted small">Calculées sur toutes les parties importées dans lesquelles ce joueur apparaît.</p>
+      </div>
+      <div id="stats-out"></div>
+    </section>
+    <!-- ======================= MON COMPTE ======================= -->
+    <section class="panel" id="tab-compte">
+      <div class="account-grid">
+        <div class="card">
+          <div class="card-title">Mon compte d’échecs</div>
+          <p class="muted small">Indiquez simplement votre pseudo sur une plateforme (ou les deux). Aucun mot de passe n’est
+            nécessaire : les parties sont récupérées via les API publiques. Ces réglages restent enregistrés dans ce navigateur.</p>
+          <form id="account-form" autocomplete="off">
+            <fieldset class="platform">
+              <legend><label><input type="checkbox" id="acc-chesscom-on"> Chess.com</label></legend>
+              <label class="field">Pseudo Chess.com
+                <input type="text" id="acc-chesscom" placeholder="ex. : MonPseudo">
+              </label>
+              <label class="field">Nombre de mois d’archives à parcourir
+                <input type="number" id="acc-chesscom-months" min="1" max="24" value="3">
+              </label>
+            </fieldset>
+            <fieldset class="platform">
+              <legend><label><input type="checkbox" id="acc-lichess-on"> Lichess</label></legend>
+              <label class="field">Pseudo Lichess
+                <input type="text" id="acc-lichess" placeholder="ex. : MonPseudo">
+              </label>
+              <label class="field">Nombre maximal de parties à récupérer
+                <input type="number" id="acc-lichess-max" min="1" max="300" value="50">
+              </label>
+              <label class="field"><span>Jeton d’accès personnel Lichess <span class="optional">facultatif</span></span>
+                <input type="password" id="acc-lichess-token" placeholder="lip_… (laisser vide si inutile)">
+                <span class="muted small">Uniquement pour inclure vos parties privées. Il reste stocké localement dans ce navigateur
+                  et n’est envoyé qu’à lichess.org. Ce n’est <strong>pas</strong> votre mot de passe.</span>
+              </label>
+            </fieldset>
+            <label class="check"><input type="checkbox" id="acc-autosync" checked> Synchroniser automatiquement au démarrage</label>
+            <div class="row-gap">
+              <button type="submit" class="btn primary" id="btn-account-save">Enregistrer</button>
+              <button type="button" class="btn" id="btn-sync">⟳ Synchroniser maintenant</button>
+            </div>
+          </form>
+        </div>
+        <div class="card">
+          <div class="card-title">Synchronisation</div>
+          <div class="status" id="sync-status" role="status" aria-live="polite"></div>
+          <p class="muted small" id="sync-last"></p>
+          <p class="muted small">Les parties déjà importées sont ignorées (identifiées par leur adresse sur le site).
+            L’échiquier est automatiquement orienté de votre côté et « Mes statistiques » utilise ce pseudo par défaut.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <footer class="footer">
+    Moteur : Stockfish 19 (WASM, GPLv3) · Règles : chess.js (BSD) · Données enregistrées localement dans votre navigateur.
+  </footer>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

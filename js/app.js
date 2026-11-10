@@ -89,6 +89,7 @@ function showTab(name) {
   if (name === 'bibliotheque') renderLibrary();
   if (name === 'stats') renderStatsForm();
   if (name === 'compte') renderAccountForm();
+  if (window.matchMedia('(max-width: 700px)').matches) window.scrollTo(0, 0);
 }
 
 // ---------------------------------------------------------------- moteur
@@ -864,15 +865,15 @@ function renderStats() {
     <td><span class="pb-color ${cls}"></span>${label}</td>
     <td>${b.total}</td><td>${b.victoire}</td><td>${b.nul}</td><td>${b.defaite}</td>
     <td>${b.total ? scorePercent(b).toFixed(0) + ' %' : '–'}</td>
-    <td class="bar-cell">${wdlBar(b)}</td></tr>`;
+    <td class="bar-cell hide-m">${wdlBar(b)}</td></tr>`;
   const openings = s.openingList.slice(0, 12).map((o) => `<tr>
     <td>${o.eco ? `<span class="eco">${escapeHtml(o.eco)}</span>` : ''}${escapeHtml(o.name)}</td>
     <td>${o.all.total}</td>
-    <td>${o.all.victoire} / ${o.all.nul} / ${o.all.defaite}</td>
-    <td>${o.w.total ? scorePercent(o.w).toFixed(0) + ' %' : '–'}</td>
-    <td>${o.b.total ? scorePercent(o.b).toFixed(0) + ' %' : '–'}</td>
+    <td class="nowrap">${o.all.victoire}/${o.all.nul}/${o.all.defaite}</td>
+    <td class="hide-m">${o.w.total ? scorePercent(o.w).toFixed(0) + ' %' : '–'}</td>
+    <td class="hide-m">${o.b.total ? scorePercent(o.b).toFixed(0) + ' %' : '–'}</td>
     <td><strong>${scorePercent(o.all).toFixed(0)} %</strong></td>
-    <td class="bar-cell">${wdlBar(o.all)}</td></tr>`).join('');
+    <td class="bar-cell hide-m">${wdlBar(o.all)}</td></tr>`).join('');
   out.innerHTML = `
     <div class="stats-kpis">
       <div class="card kpi"><div class="kpi-value">${s.games}</div><div class="kpi-label">parties</div></div>
@@ -885,14 +886,14 @@ function renderStats() {
     <div class="card">
       <div class="card-title">Résultats par couleur</div>
       <table class="table">
-        <thead><tr><th>Couleur</th><th>Parties</th><th>V</th><th>N</th><th>D</th><th>Score</th><th></th></tr></thead>
-        <tbody>${colorRow('Avec les Blancs', s.w, 'white')}${colorRow('Avec les Noirs', s.b, 'black')}</tbody>
+        <thead><tr><th>Couleur</th><th>Parties</th><th>V</th><th>N</th><th>D</th><th>Score</th><th class="hide-m"></th></tr></thead>
+        <tbody>${colorRow('Blancs', s.w, 'white')}${colorRow('Noirs', s.b, 'black')}</tbody>
       </table>
     </div>
     <div class="card">
       <div class="card-title">Ouvertures les plus jouées</div>
       <table class="table">
-        <thead><tr><th>Ouverture</th><th>Parties</th><th>V / N / D</th><th>Score Blancs</th><th>Score Noirs</th><th>Score</th><th></th></tr></thead>
+        <thead><tr><th>Ouverture</th><th>Parties</th><th class="nowrap">V/N/D</th><th class="hide-m">Score Blancs</th><th class="hide-m">Score Noirs</th><th>Score</th><th class="hide-m"></th></tr></thead>
         <tbody>${openings}</tbody>
       </table>
     </div>`;
@@ -905,8 +906,27 @@ function applyTheme() {
 }
 
 // ---------------------------------------------------------------- initialisation
+// Téléphone : glisser horizontalement sur l'échiquier pour changer de coup.
+function bindSwipe(el) {
+  let x0 = null, y0 = null, t0 = 0;
+  el.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1) { x0 = null; return; }
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; t0 = Date.now();
+  }, { passive: true });
+  el.addEventListener('touchend', (e) => {
+    if (x0 === null || !state.game) return;
+    const dx = e.changedTouches[0].clientX - x0;
+    const dy = e.changedTouches[0].clientY - y0;
+    x0 = null;
+    if (Math.abs(dx) < 35 || Math.abs(dx) < Math.abs(dy) * 1.5 || Date.now() - t0 > 800) return;
+    // gauche → coup suivant (comme tourner une page) ; droite → coup précédent
+    goto(state.ply + (dx < 0 ? 1 : -1));
+  }, { passive: true });
+}
+
 function bindEvents() {
   $$('.tab').forEach((t) => t.addEventListener('click', () => showTab(t.dataset.tab)));
+  bindSwipe($('#board'));
   document.addEventListener('click', (e) => {
     const t = e.target.closest('[data-goto-tab]');
     if (t) showTab(t.dataset.gotoTab);

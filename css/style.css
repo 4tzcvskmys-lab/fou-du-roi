@@ -375,21 +375,145 @@ fieldset.platform legend { padding: 0 6px; font-weight: 600; }
   .install-banner { display: none !important; }
 }
 
-/* ---------- en-tête compact sur téléphone ---------- */
+/* ---------- icônes d'onglets (visibles seulement sur téléphone) ---------- */
+.tab-ico { display: none; width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tab-ico .f { fill: currentColor; stroke: none; opacity: 0.35; }
+.tab-label .short, .hint-mobile, .swipe-hint { display: none; }
+.nowrap { white-space: nowrap; }
+
+/* =====================================================================
+   TÉLÉPHONE : présentation type « appli iPhone »
+   ===================================================================== */
 @media (max-width: 700px) {
+  html { -webkit-text-size-adjust: 100%; }
+  body { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+  button, .board, select, a { touch-action: manipulation; }
+  /* iOS zoome sur les champs < 16 px : on l'évite */
+  input, select, textarea { font-size: 16px !important; }
+
+  /* --- en-tête : logo + état du moteur --- */
   .topbar {
-    display: grid; grid-template-columns: 1fr auto; gap: 8px 10px;
-    padding: 8px 12px; position: static;
+    display: flex; gap: 10px; position: sticky; top: 0;
+    padding: calc(env(safe-area-inset-top) + 8px) 14px 8px;
+    /* le flou créerait un repère pour la barre d'onglets « fixed » : on le retire */
+    backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--bg-2);
   }
-  .brand { order: 1; gap: 8px; }
-  .brand-logo { width: 30px; height: 30px; }
-  .brand-sub { display: none; }
-  .topbar-right { order: 2; margin-left: 0; gap: 8px; }
+  .brand { gap: 8px; }
+  .brand-logo { width: 28px; height: 28px; }
+  .brand-name { font-size: 16px; }
+  .brand-sub, #btn-sync-top { display: none !important; }
+  .topbar-right { margin-left: auto; gap: 8px; }
+  .engine-status { font-size: 11.5px; }
+
+  /* --- barre d'onglets en bas, comme une appli --- */
   .tabs {
-    order: 3; grid-column: 1 / -1; flex-wrap: nowrap; overflow-x: auto;
-    margin: 0 -12px; padding: 0 12px 2px; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 0;
+    padding: 6px 4px calc(env(safe-area-inset-bottom) + 6px);
+    background: color-mix(in srgb, var(--bg-2) 92%, transparent);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid var(--border);
   }
-  .tabs::-webkit-scrollbar { display: none; }
-  .tab { white-space: nowrap; padding: 7px 12px; font-size: 14px; flex: none; }
-  main { padding: 10px; }
+  .tab {
+    position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 4px 2px; border-radius: 10px; font-size: 10.5px; font-weight: 600; white-space: nowrap; color: var(--muted);
+  }
+  .tab:hover { background: none; color: var(--muted); }
+  .tab.active, .tab.active:hover { background: none; color: var(--accent); }
+  .tab-ico { display: block; }
+  .tab-label .long { display: none; }
+  .tab-label .short { display: inline; }
+  .tab-count {
+    position: absolute; top: 0; left: calc(50% + 6px); margin: 0; min-width: 16px; padding: 0 4px;
+    font-size: 10px; line-height: 16px; background: var(--accent); color: var(--accent-ink);
+  }
+  main { padding: 10px 10px calc(env(safe-area-inset-bottom) + 84px); }
+  .footer { display: none; }
+  .card { padding: 14px; border-radius: 14px; }
+
+  /* --- analyse : ordre pensé pour le pouce --- */
+  .analysis-layout { display: flex; flex-direction: column; gap: 0; min-width: 0; }
+  .analysis-layout > * , .side-col > *, .board-col > * { min-width: 0; max-width: 100%; }
+  .board-col, .side-col { display: contents; }
+  .game-info { order: 1; padding: 10px 14px; margin-bottom: 8px; }
+  #player-top { order: 2; }
+  .board-area { order: 3; }
+  #player-bottom { order: 4; }
+  .controls { order: 5; }
+  .swipe-hint { order: 6; }
+  .engine-card { order: 7; }
+  .summary-card { order: 8; }
+  .graph-card { order: 9; }
+  .moves-card { order: 10; }
+  .side-col > .card, .board-col > .card { margin-bottom: 10px; }
+
+  .analysis-layout { align-items: stretch; }
+  .board-area { width: 100%; }
+  .player-bar { padding-left: 22px; }
+  .ply-indicator { min-width: 0; padding: 0 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* carte d'info compacte : titre sur une ligne + résultat et ouverture */
+  .game-info { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+  .game-info .gi-title { flex: 1 1 100%; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .game-info .gi-details { display: none; }
+  .game-info .gi-sub, .game-info .gi-opening { margin: 0; font-size: 12.5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .game-info .gi-opening { flex: 1; }
+  .player-bar { padding: 6px 2px; font-size: 14px; }
+  .board-area { gap: 6px; }
+  .eval-bar { width: 14px; }
+  .eval-label { font-size: 9px; }
+  .board { border-radius: 6px; }
+
+  .controls {
+    display: grid; grid-template-columns: repeat(2, 1fr) 1.6fr repeat(3, 1fr); gap: 6px; margin: 6px 0 4px;
+  }
+  .controls .btn.icon { height: 48px; padding: 0; font-size: 18px; border-radius: 12px; }
+  .ply-indicator { text-align: center; font-weight: 700; font-size: 14px; }
+  .swipe-hint { display: block; text-align: center; color: var(--muted); font-size: 11.5px; margin: 0 0 10px; }
+
+  .engine-head { flex-wrap: wrap; gap: 8px; }
+  .engine-head .field-inline { flex: 1; min-width: 0; }
+  .engine-head select { flex: 1; min-width: 0; }
+  #btn-analyze { flex: 1 1 100%; height: 46px; font-size: 15px; }
+  .engine-pv { font-size: 12px; }
+
+  /* bilan : les deux joueurs côte à côte, compact */
+  .sum-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+  .sum-player { padding: 10px; }
+  .sum-name { font-size: 13px; }
+  .acc-value { font-size: 26px; }
+  .sum-cats { margin: 6px 0; gap: 2px; font-size: 12.5px; }
+  .sum-cats li { grid-template-columns: 22px 1fr auto; gap: 4px; }
+  .sum-cats .cat-icon { min-width: 18px; height: 18px; font-size: 10px; }
+  .sum-acpl { font-size: 11.5px; }
+
+  .hint-desktop { display: none; }
+  .hint-mobile { display: inline; }
+
+  .move-list { grid-template-columns: 30px 1fr 1fr; max-height: 300px; }
+  .mv { padding: 7px 8px; font-size: 15px; }
+  .mv-no { padding: 7px 4px 7px 0; font-size: 13px; }
+
+  /* --- bibliothèque --- */
+  .lib-head { flex-direction: column; align-items: stretch; }
+  .lib-head .row-gap { flex-wrap: nowrap; }
+  .lib-head input { flex: 1; min-width: 0; }
+  .game-open { padding: 11px 12px; border-radius: 12px; }
+
+  /* --- statistiques --- */
+  .stats-kpis { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
+  .stats-kpis .kpi { grid-column: span 2; order: 3; }
+  .stats-kpis .kpi:first-child, .stats-kpis .kpi:last-child { grid-column: span 3; order: 1; }
+  .stats-kpis .kpi { padding: 10px 6px; }
+  .kpi-value { font-size: 22px; }
+  .kpi-label { font-size: 11px; }
+  .table th, .table td { padding: 8px 5px; font-size: 13.5px; }
+  .hide-m { display: none; }
+
+  /* --- formulaires --- */
+  .import-grid, .account-grid { grid-template-columns: 1fr; gap: 10px; }
+  .import-grid .card, .account-grid .card { margin-bottom: 0; }
+  .btn { min-height: 42px; }
+  .btn.small { min-height: 34px; }
+  .install-banner { padding-top: calc(env(safe-area-inset-top) + 10px); }
+  .install-banner + .topbar { padding-top: 8px; }
 }

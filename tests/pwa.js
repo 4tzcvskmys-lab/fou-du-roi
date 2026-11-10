@@ -15,7 +15,7 @@ const { chromium, devices } = require('playwright');
   const icons = await page.evaluate(async () => Promise.all(['icons/apple-touch-icon.png','icons/icon-192.png','icons/icon-512.png','icons/icon-maskable-512.png'].map(async u => (await fetch(u)).status)));
   ok('Icônes accessibles', icons.every(s => s === 200), icons.join(','));
   await page.evaluate(() => navigator.serviceWorker.ready);
-  const cached = await page.evaluate(async () => (await (await caches.open('fdr-v1')).keys()).length);
+  const cached = await page.evaluate(async () => (await (await caches.open('fdr-v2')).keys()).length);
   ok('Service worker actif, fichiers en cache', cached >= 20, cached + ' fichiers');
   // charger l'exemple en ligne
   await page.click('.tab[data-tab="importer"]');

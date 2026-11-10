@@ -1,6 +1,6 @@
 // Service worker de Fou du Roi : fonctionnement hors ligne + mise à jour en arrière-plan.
 // Les appels aux API Lichess / Chess.com (autres domaines) ne sont pas interceptés.
-const CACHE = 'fdr-v1';
+const CACHE = 'fdr-v2';
 const FILES = [
   './',
   'index.html',
